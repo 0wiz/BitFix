@@ -7,7 +7,8 @@ from datetime import datetime
 import sys
 
 #   Declare Variables
-system('mode con: cols=58 lines=3 & title BitFix MediaDate')
+Menu_width = 51
+system('mode con: cols=' +str(Menu_width) + ' lines=3 & title BitFix MediaDate')
 Video_formats = ['mkv', 'm4v', 'm2v', 'avi', 'mov', 'qt', 'mod', 'wmv', 'mp4', 'm4p', 'mp3', 'mp2', 'mpg', 'mpeg',
         'mpe', 'mpv', '3gp', '3g2', 'wav', 'flv', 'f4v', 'f4p', 'f4a', 'f4b', 'drc', 'svi', 'vob', 'ogv', 'ogg',
         'mng', 'mts','m2ts', 'ts', 'webm', 'rm', 'rmvb', 'viv', 'amv', 'yuv']
@@ -34,6 +35,9 @@ Start_year = 1996 # The first year included in media collection
 Total_years = datetime.now().year+1-Start_year
 Files_per_year = [[[0]*31 for _ in range(12)] for _ in range(Total_years)]
 Width, Height = max(len(Table_format), Record_length*Col_of_records), 6+Total_years+Row_of_records
+Progress_date = 33
+Progress_name = 100-Progress_date
+Progress_bars = Menu_width-6
 
 #   Declare Functions
 def print_at(row, col, text):
@@ -49,8 +53,8 @@ def is_date_valid(date):
 #   Inquire setting to execute
 while True:
     system('cls')
-    print('1. Normal    2. Only Stats   3. Force Tag')
-    mode = input()
+    print_at(2, 4, ']    1. Normal   2. Only Stats   3. Force Tag')
+    mode = input('\n [')
     if mode in ('1', '2', '3'):
         if mode == '2':
             Rename_files = False
@@ -61,13 +65,14 @@ while True:
             Unique_tags = 1
         break
 system('cls')
-print('\n   |                    Setting up                   |')
+print_at(2, 3, '|'+' '*int(Progress_bars/2-1)+'0%'+' '*int(Progress_bars/2)+'|')
 
 #   Load files and their modified dates
 files = [f for f in listdir('.') if isfile(f) and f[f.rfind('.')+1:].lower() in Media_formats]
 dates = [strftime("%Y-%m-%d %H.%M.%S", gmtime(getmtime(f)+7200)) for f in files]
 
 #   Specify one date per file
+progress = 0
 for i, file in enumerate(files):
 
     # Gather date from file name
@@ -79,9 +84,9 @@ for i, file in enumerate(files):
             name_date += (int(name_digits[8:10]), int(name_digits[10:12]), int(name_digits[12:14]))
     
     # Gather date from image metadata (Date taken)
-    exif = Image.open(file)._getexif() if file[file.rfind('.')+1:].lower() in Image_formats else None
     exif_date = ()
     try:
+        exif = Image.open(file)._getexif()
         exif_date += (int(exif[36867][:4]), int(exif[36867][5:7]), int(exif[36867][8:10]))
         exif_date += (int(exif[36867][11:13]), int(exif[36867][14:16]), int(exif[36867][17:19]))
     except:
@@ -117,9 +122,15 @@ for i, file in enumerate(files):
         Unknown_date += 1
         continue
     Files_per_year[int(dates[i][:4])-1996][int(dates[i][5:7])-1][int(dates[i][8:10])-1] += 1
+    
+    # Print out progression
+    if progress != int(Progress_date*(i+1)/len(files)):
+        progress = int(Progress_date*(i+1)/len(files))
+        bars = int(Progress_bars*progress/100)
+        print_at(2, 3, '|'+'-'*bars+' '*(Progress_bars-bars)+'|')
+        print_at(2, int(Menu_width/2-1), '%2d%%'%progress)
 
 #   Rename files
-progress = 0
 for i, file in enumerate(files):
 
     if Rename_files and dates[i] == '?':
@@ -164,12 +175,11 @@ for i, file in enumerate(files):
             rename(file, dates[i]+tag+file[file.rfind('.'):].lower())
 
     # Print out progression
-    if progress != int(100*(i+1)/len(files)):
-        progress = int(100*(i+1)/len(files))
-        system('cls')
-        print('\n   |'+''.join([char*int(progress*.49) for char in '-']), end='')
-        print(''.join([' ']*(49-int(progress*.49))) + '|')
-        print_at(2, 28, '%2d%%'%progress)
+    if progress != Progress_date+int(Progress_name*(i+1)/len(files)):
+        progress = Progress_date+int(Progress_name*(i+1)/len(files))
+        bars = int(Progress_bars*progress/100)
+        print_at(2, 3, '|'+'-'*bars+' '*(Progress_bars-bars)+'|')
+        print_at(2, int(Menu_width/2-1), '%2d%%'%progress)
 
 #   Print table of files per month
 system('cls & mode con: cols=' + str(Width) + ' lines=' + str(Height))
