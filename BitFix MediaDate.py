@@ -9,7 +9,7 @@ import sys
 #   Geometric Constants
 MENU_WIDTH = 51
 RECORD_DIMENSIONS = [5, 2] # Rows and Columns of record media per day to be displayed when printing stats
-RECORD_COUNT = sum(RECORD_DIMENSIONS)
+RECORD_COUNT = RECORD_DIMENSIONS[0]*RECORD_DIMENSIONS[1]
 
 system('mode con: cols=' +str(MENU_WIDTH) + ' lines=3 & title BitFix MediaDate')
 Video_formats = ['mkv', 'm4v', 'm2v', 'avi', 'mov', 'qt', 'mod', 'wmv', 'mp4', 'm4p', 'mp3', 'mp2', 'mpg', 'mpeg',
@@ -112,6 +112,15 @@ for i, file in enumerate(files):
             if file.find('\'') == 19: # The file have previously been named using file date
                 dates[i] += '\''
                 Mod_dated += 1
+            elif file.endswith('.jpg') and not exif_date_valid:
+                try: # Match EXIF 'Date Taken' with name date
+                    import piexif
+                    exif = piexif.load(file)
+                    exif["Exif"][piexif.ExifIFD.DateTimeOriginal] = '%04d:%02d:%02d %02d:%02d:%02d' % name_date
+                    piexif.remove(file)
+                    piexif.insert(piexif.dump(exif), file)
+                except:
+                    pass
         else:
             dates[i] = '%04d-%02d-%02d' % name_date[:3] + ' NT%d' % Half_dated
             Half_dated += 1
