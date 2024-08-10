@@ -33,10 +33,10 @@ Unique_tags = 0 # The unique number of valid tags found
 Total_tags = 0 # The total number of valid tags found
 Record_format = ' %2d: %04d-%02d-%02d (%d Files) '
 Record_length = len(Record_format%(0, 0, 0, 0, 10))
-Table_format = '      | Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec | '
+Table_format = '      | Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec | Sum '
 Start_year = 1996 # The first year included in media collection
 Total_years = datetime.now().year+1-Start_year
-Files_per_year = [[[0]*31 for _ in range(12)] for _ in range(Total_years)]
+Files_per_date = [[[0]*31 for _ in range(12)] for _ in range(Total_years)]
 Width, Height = max(len(Table_format), Record_length*RECORD_DIMENSIONS[1]), 6+Total_years+RECORD_DIMENSIONS[0]
 Progress_date = 33
 Progress_name = 100-Progress_date
@@ -133,7 +133,7 @@ for i, file in enumerate(files):
         dates[i] = '?'
         Null_dated += 1
         continue
-    Files_per_year[int(dates[i][:4])-1996][int(dates[i][5:7])-1][int(dates[i][8:10])-1] += 1
+    Files_per_date[int(dates[i][:4])-1996][int(dates[i][5:7])-1][int(dates[i][8:10])-1] += 1
     
     # Print out progression
     if progress != int(Progress_date*(i+1)/len(files)):
@@ -198,7 +198,7 @@ system('cls & mode con: cols=' + str(Width) + ' lines=' + str(Height))
 table_col = (1+Width-len(Table_format))//2
 print_at(1, table_col, Table_format) # Header
 record_days = [(0, 0, 0, 0) for _ in range(RECORD_COUNT)]
-for year, files_per_month in enumerate(Files_per_year):
+for year, files_per_month in enumerate(Files_per_date):
     year_str = ' ' + str(Start_year+year) + ' |                                                 |'
     print_at(2+year, table_col, year_str) # Year and background
     for month, files_per_day in enumerate(files_per_month):
@@ -211,6 +211,9 @@ for year, files_per_month in enumerate(Files_per_year):
                     record_days[i+1:RECORD_COUNT] = record_days[i:RECORD_COUNT-1]
                     record_days[i] = (Start_year+year, month+1, day+1, files_in_day)
                     break
+    files_in_year = sum([sum(files_per_day) for files_per_day in files_per_month])
+    year_str = '%2d'%files_in_year if files_in_year > 0 else ' -'
+    print_at(2+year, table_col+59, year_str)
 
 #   Print list of days with record number of files and misc stats
 for row in range(RECORD_DIMENSIONS[0]):
